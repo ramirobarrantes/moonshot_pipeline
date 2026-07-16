@@ -73,11 +73,11 @@ The pipeline expects a CSV with the following columns:
 | `tumor_sample` | TNScope | SM tag in the tumor CRAM `@RG` header — must match exactly |
 | `normal_sample` | TNScope | SM tag in the normal CRAM `@RG` header — must match exactly |
 
-`tumor_sample` and `normal_sample` are required for TNScope. To find the SM tags:
+`tumor_sample` and `normal_sample` **must exactly match the `SM:` tags** in the CRAM `@RG` header lines — Sentieon will error if they don't. To look them up:
 
 ```bash
 samtools view -H your.cram | grep "^@RG"
-# look for SM: field
+# e.g. @RG  ID:...  SM:MS008_TUMOR  ...
 ```
 
 **Example** (`assets/samplesheet.csv`):
@@ -160,7 +160,7 @@ apptainer exec docker://ensemblorg/ensembl-vep:release_114.0 \
 
 ### Sentieon license and installation
 
-Sentieon reads its license and binary location from environment variables. Set these in your shell before running the pipeline (e.g. in your `~/.bashrc` or as part of your Slurm job preamble):
+Sentieon reads its license and binary location from environment variables. Set these before running the pipeline (e.g. in your `~/.bashrc` or Slurm job preamble):
 
 ```bash
 export SENTIEON_LICENSE=/path/to/your.lic
@@ -168,7 +168,7 @@ export SENTIEON_INSTALL_DIR=/path/to/sentieon-genomics-202503.xx/bin
 export SENTIEON_TMPDIR=/path/to/scratch/sentieon_tmp
 ```
 
-The pipeline passes these through to the Apptainer container automatically via `autoMounts = true`. No pipeline parameter is needed.
+The pipeline whitelists all three variables so Apptainer passes them into the container (`envWhitelist` in `nextflow.config`). No pipeline parameter is needed.
 
 ---
 

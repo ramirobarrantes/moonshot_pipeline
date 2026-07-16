@@ -26,10 +26,11 @@ process SENTIEON_TNHAPLOTYPER2 {
     task.ext.when == null || task.ext.when
 
     script:
-    def args      = task.ext.args ?: ''
-    prefix        = task.ext.prefix ?: "${meta.id}"
-    def tumor_sm  = meta.tumor_sample  ?: meta.id
-    def normal_sm = meta.normal_sample ?: meta.id
+    def args         = task.ext.args ?: ''
+    prefix           = task.ext.prefix ?: "${meta.id}"
+    def tumor_sm     = meta.tumor_sample  ?: meta.id
+    def normal_sm    = meta.normal_sample ?: meta.id
+    def germline_arg = germline_vcf ? "--germline_vcf ${germline_vcf}" : ''
     """
     sentieon driver \\
         -r ${fasta} \\
@@ -39,7 +40,7 @@ process SENTIEON_TNHAPLOTYPER2 {
         --algo TNhaplotyper2 \\
             --tumor_sample  ${tumor_sm} \\
             --normal_sample ${normal_sm} \\
-            --germline_vcf  ${germline_vcf} \\
+            ${germline_arg} \\
             ${prefix}_tnhap2-tmp.vcf.gz \\
         --algo OrientationBias \\
             --tumor_sample  ${tumor_sm} \\

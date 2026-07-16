@@ -68,7 +68,7 @@ workflow {
             def meta = [
                 id:            row.patient,
                 tumor_sample:  row.tumor_sample  ?: row.patient,
-                normal_sample: row.normal_sample ?: row.patient,
+                normal_sample: row.normal_sample ?: (row.patient + '_NORMAL'),
             ]
             tuple(
                 meta,
