@@ -13,7 +13,6 @@ process SENTIEON_TNHAPLOTYPER2 {
     path germline_vcf_tbi
     path contamination_vcf
     path contamination_vcf_tbi
-    val  sentieon_license
 
     output:
     tuple val(meta), path("${prefix}_tnhap2-tmp.vcf.gz"),          emit: vcf_tmp
@@ -32,8 +31,6 @@ process SENTIEON_TNHAPLOTYPER2 {
     def tumor_sm  = meta.tumor_sample  ?: meta.id
     def normal_sm = meta.normal_sample ?: meta.id
     """
-    export SENTIEON_LICENSE=${sentieon_license}
-
     sentieon driver \\
         -r ${fasta} \\
         -t ${task.cpus} \\

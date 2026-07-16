@@ -48,7 +48,6 @@ nextflow run main.nf \
     --germline_vcf_tbi /path/to/af-only-gnomad.hg38.vcf.gz.tbi \
     --contamination_vcf /path/to/small_exac_common_3.hg38.vcf.gz \
     --contamination_vcf_tbi /path/to/small_exac_common_3.hg38.vcf.gz.tbi \
-    --sentieon_license yourserver:port \
     --vep_cache /path/to/.vep \
     --outdir results \
     -resume
@@ -56,7 +55,7 @@ nextflow run main.nf \
 
 For **WXS (exome)** data, add `--wgs false` or use `-profile wxs`.
 
-TNScope is skipped if `--sentieon_license` is not supplied. VEP is skipped if `--vep_cache` is omitted.
+VEP is skipped if `--vep_cache` is omitted.
 
 ---
 
@@ -115,8 +114,6 @@ Multiple tumors can share the same normal — the pipeline pairs them correctly 
 | `--germline_vcf_tbi` | Tabix index for germline VCF |
 | `--contamination_vcf` | Common variant VCF for contamination model (e.g. `small_exac_common_3.hg38.vcf.gz`) |
 | `--contamination_vcf_tbi` | Tabix index for contamination VCF |
-| `--sentieon_license` | Sentieon license server (`host:port`) or license file path |
-
 ### Optional
 
 | Parameter | Default | Description |
@@ -161,15 +158,17 @@ apptainer exec docker://ensemblorg/ensembl-vep:release_114.0 \
     vep_install -a cf -s homo_sapiens -y GRCh38 --CACHE_VERSION 114 -c ~/.vep
 ```
 
-### Sentieon license (`--sentieon_license`)
+### Sentieon license and installation
 
-Sentieon requires a valid license. Pass the license server address:
+Sentieon reads its license and binary location from environment variables. Set these in your shell before running the pipeline (e.g. in your `~/.bashrc` or as part of your Slurm job preamble):
 
 ```bash
---sentieon_license myserver.institution.edu:8990
+export SENTIEON_LICENSE=/path/to/your.lic
+export SENTIEON_INSTALL_DIR=/path/to/sentieon-genomics-202503.xx/bin
+export SENTIEON_TMPDIR=/path/to/scratch/sentieon_tmp
 ```
 
-Or a license file path if using a file-based license. Contact your institution's HPC team or Sentieon support for access.
+The pipeline passes these through to the Apptainer container automatically via `autoMounts = true`. No pipeline parameter is needed.
 
 ---
 
@@ -240,7 +239,7 @@ nextflow run main.nf ... -c my_cluster.config
 - **Nextflow** ≥ 24.04.0
 - **Apptainer** (Singularity) — containers pulled automatically via Wave
 - **Slurm** — default executor; use `-profile local` to run without it
-- **Sentieon license** — required for TNScope steps only
+- **Sentieon** — license and install path set via `SENTIEON_LICENSE` / `SENTIEON_INSTALL_DIR` env vars (see Reference Files)
 
 ---
 

@@ -9,7 +9,6 @@ process SENTIEON_TNFILTER {
     tuple val(meta), path(vcf), path(vcf_tbi), path(orientation), path(contamination), path(contamination_segments)
     path fasta
     path fai
-    val  sentieon_license
 
     output:
     tuple val(meta), path("${prefix}_tnhap2.vcf.gz"),     emit: vcf
@@ -25,8 +24,6 @@ process SENTIEON_TNFILTER {
     def tumor_sm  = meta.tumor_sample  ?: meta.id
     def normal_sm = meta.normal_sample ?: meta.id
     """
-    export SENTIEON_LICENSE=${sentieon_license}
-
     sentieon driver \\
         -r ${fasta} \\
         --algo TNfilter \\

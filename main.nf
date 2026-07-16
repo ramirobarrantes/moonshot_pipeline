@@ -207,8 +207,7 @@ workflow {
         ch_germline_vcf,
         ch_germline_vcf_tbi,
         ch_contamination_vcf,
-        ch_contamination_vcf_tbi,
-        params.sentieon_license
+        ch_contamination_vcf_tbi
     )
 
     /*
@@ -224,8 +223,7 @@ workflow {
     SENTIEON_TNFILTER(
         ch_tnfilter_input,
         ch_fasta,
-        ch_fai,
-        params.sentieon_license
+        ch_fai
     )
 
     // -------------------------------------------------------------------------
