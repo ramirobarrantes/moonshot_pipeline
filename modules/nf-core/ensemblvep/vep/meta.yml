@@ -1,0 +1,80 @@
+name: "ensemblvep_vep"
+description: Annotates variants in a VCF using Ensembl VEP with a local offline cache
+keywords:
+  - annotation
+  - variant
+  - vcf
+  - vep
+tools:
+  - "ensembl-vep":
+      description: "Ensembl Variant Effect Predictor — annotates genomic variants with
+        functional consequences, allele frequencies, and other variant properties"
+      homepage: "https://www.ensembl.org/info/docs/tools/vep/index.html"
+      documentation: "https://www.ensembl.org/info/docs/tools/vep/script/vep_options.html"
+      tool_dev_url: "https://github.com/Ensembl/ensembl-vep"
+      doi: "10.1186/s13059-016-0974-4"
+      licence: ["Apache-2.0"]
+      identifier: "biotools:vep"
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'sample1' ]`
+    - vcf:
+        type: file
+        description: bgzipped VCF to annotate
+        pattern: "*.vcf.gz"
+    - tbi:
+        type: file
+        description: Tabix index for the input VCF
+        pattern: "*.vcf.gz.tbi"
+  - cache_dir:
+      type: directory
+      description: Path to the VEP cache directory (--dir_cache)
+  - genome:
+      type: string
+      description: Genome assembly name passed to --assembly (e.g. GRCh38)
+  - cache_version:
+      type: integer
+      description: VEP cache version passed to --cache_version (e.g. 114)
+
+output:
+  vcf:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "*.vcf.gz":
+          type: file
+          description: bgzipped annotated VCF
+          pattern: "*.vcf.gz"
+  tbi:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "*.vcf.gz.tbi":
+          type: file
+          description: Tabix index of the annotated VCF
+          pattern: "*.vcf.gz.tbi"
+  report:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "*.summary.html":
+          type: file
+          description: VEP run summary HTML report
+          pattern: "*.summary.html"
+          optional: true
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The process the versions were collected from
+      - ensembl-vep:
+          type: string
+          description: The tool name
+
+authors:
+  - "@ramirobarrantes"
+maintainers:
+  - "@ramirobarrantes"

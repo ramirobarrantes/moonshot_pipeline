@@ -17,6 +17,7 @@ include { MUSE_SUMP                                   } from './modules/nf-core/
 include { HMMCOPY_READCOUNTER as READCOUNTER_TUMOR    } from './modules/nf-core/hmmcopy/readcounter/main'
 include { HMMCOPY_READCOUNTER as READCOUNTER_NORMAL   } from './modules/nf-core/hmmcopy/readcounter/main'
 include { ICHORCNA_RUN                                } from './modules/nf-core/ichorcna/run/main'
+include { ENSEMBLVEP_VEP                              } from './modules/nf-core/ensemblvep/vep/main'
 
 workflow {
 
@@ -33,6 +34,7 @@ workflow {
     ch_fai       = channel.fromPath(params.fai, checkIfExists: true).first()
     ch_dbsnp     = channel.fromPath(params.dbsnp, checkIfExists: true).first()
     ch_dbsnp_tbi = channel.fromPath(params.dbsnp_tbi, checkIfExists: true).first()
+    ch_vep_cache = params.vep_cache ? channel.fromPath(params.vep_cache, checkIfExists: true).first() : channel.value([])
     ch_gc_wig    = params.gc_wig         ? channel.fromPath(params.gc_wig, checkIfExists: true).first()         : channel.value([])
     ch_map_wig   = params.map_wig        ? channel.fromPath(params.map_wig, checkIfExists: true).first()        : channel.value([])
     ch_centromere = params.centromere     ? channel.fromPath(params.centromere, checkIfExists: true).first()     : channel.value([])
@@ -130,6 +132,26 @@ workflow {
         }
 
     MUSE_SUMP(ch_sump_input)
+
+    // -------------------------------------------------------------------------
+    // Step 2b: VEP annotation of somatic VCFs
+    // -------------------------------------------------------------------------
+
+    /*
+    Annotate somatic VCFs with Ensembl VEP using a local offline cache.
+    Flags (--everything, --filter_common, --per_gene, --total_length) are set
+    via ext.args in modules.config. Only runs when --vep_cache is supplied.
+    ensemblvep/vep input: tuple(meta, vcf, tbi), cache_dir, genome, cache_version
+    */
+    ch_vep_input = MUSE_SUMP.out.vcf
+        .join(MUSE_SUMP.out.tbi)
+
+    ENSEMBLVEP_VEP(
+        ch_vep_input,
+        ch_vep_cache,
+        params.vep_genome,
+        params.vep_cache_version
+    )
 
     // -------------------------------------------------------------------------
     // Step 3: ichorCNA copy number analysis
