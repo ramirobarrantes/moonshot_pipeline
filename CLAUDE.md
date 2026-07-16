@@ -4,10 +4,11 @@
 
 Somatic variant calling and copy number analysis from matched tumor/normal CRAM pairs.
 
-**Three-step workflow (`main.nf`):**
+**Workflow (`main.nf`):**
 1. **CRAM → BAM** — `samtools/convert` for tumor and normal independently
 2. **Somatic SNVs** — `muse/call` then `muse/sump` (WGS `-G` or WXS `-E` mode)
-3. **Copy number** — `hmmcopy/readcounter` on both BAMs → `ichorcna/run`
+3. **VEP annotation** — `ensemblvep/vep` annotates the MuSE VCF (requires `--vep_cache`)
+4. **Copy number** — `hmmcopy/readcounter` on both BAMs → `ichorcna/run`
 
 ## Running the pipeline
 
@@ -49,6 +50,9 @@ One row per patient. All paths must be absolute or resolvable from the run direc
 | `--rep_time_wig` | no | Replication timing wig |
 | `--exons` | no | Exon BED for annotation |
 | `--wgs` | no | `true` (default) = WGS, `false` = WXS |
+| `--vep_cache` | no | Path to VEP cache directory (`~/.vep`) |
+| `--vep_genome` | no | Assembly name for VEP (default `GRCh38`) |
+| `--vep_cache_version` | no | VEP cache version (default `114`) |
 | `--outdir` | no | Output directory (default `./results`) |
 
 *Required for ichorCNA to produce meaningful output.
@@ -62,6 +66,7 @@ modules/nf-core/
   samtools/convert/      # CRAM → BAM
   muse/call/             # MuSE somatic calling
   muse/sump/             # MuSE tier cutoffs → VCF
+  ensemblvep/vep/        # VEP annotation of somatic VCFs
   hmmcopy/readcounter/   # Read counting → WIG
   ichorcna/run/          # CNA + tumor fraction estimation
 ```
@@ -76,6 +81,7 @@ results/
   bam/normal/            # Normal BAMs
   muse/call/             # *.MuSE.txt intermediate files
   muse/sump/             # *.vcf.gz somatic SNV calls
+  vep/                   # *.vep.vcf.gz annotated VCFs + summary HTML
   hmmcopy/tumor/         # Tumor read count WIG
   hmmcopy/normal/        # Normal read count WIG
   ichorcna/              # Segments, params, corrected depth, RData
