@@ -1,3 +1,3 @@
-patient,tumor_cram,tumor_crai,normal_cram,normal_crai
-PATIENT_01,/path/to/tumor_01.cram,/path/to/tumor_01.cram.crai,/path/to/normal_01.cram,/path/to/normal_01.cram.crai
-PATIENT_02,/path/to/tumor_02.cram,/path/to/tumor_02.cram.crai,/path/to/normal_02.cram,/path/to/normal_02.cram.crai
+patient,tumor_cram,tumor_crai,normal_cram,normal_crai,tumor_sample,normal_sample
+PATIENT_01,/path/to/tumor_01.cram,/path/to/tumor_01.cram.crai,/path/to/normal_01.cram,/path/to/normal_01.cram.crai,TUMOR_SM_01,NORMAL_SM_01
+PATIENT_02,/path/to/tumor_02.cram,/path/to/tumor_02.cram.crai,/path/to/normal_02.cram,/path/to/normal_02.cram.crai,TUMOR_SM_02,NORMAL_SM_02

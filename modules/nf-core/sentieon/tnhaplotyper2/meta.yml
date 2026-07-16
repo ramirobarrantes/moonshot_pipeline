@@ -1,0 +1,98 @@
+name: "sentieon_tnhaplotyper2"
+description: |
+  Runs Sentieon TNhaplotyper2, OrientationBias, and ContaminationModel in a
+  single driver call to produce a raw somatic VCF plus auxiliary files needed
+  by TNfilter.
+keywords:
+  - somatic
+  - variant calling
+  - sentieon
+  - tumor-normal
+tools:
+  - "sentieon":
+      description: "Sentieon genomics tools — TNhaplotyper2 somatic variant caller"
+      homepage: "https://www.sentieon.com"
+      documentation: "https://support.sentieon.com/manual"
+      licence: ["Sentieon commercial license"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map with sample info. Must include tumor_sample and
+          normal_sample matching the SM tags in the CRAM read groups.
+    - tumor_cram:
+        type: file
+        description: Tumor CRAM file
+        pattern: "*.cram"
+    - tumor_crai:
+        type: file
+        description: Tumor CRAM index
+        pattern: "*.crai"
+    - normal_cram:
+        type: file
+        description: Normal CRAM file
+        pattern: "*.cram"
+    - normal_crai:
+        type: file
+        description: Normal CRAM index
+        pattern: "*.crai"
+  - fasta:
+      type: file
+      description: Reference genome FASTA
+  - fai:
+      type: file
+      description: Reference genome FASTA index
+  - germline_vcf:
+      type: file
+      description: Germline population VCF (e.g. af-only-gnomad.hg38.vcf.gz)
+  - germline_vcf_tbi:
+      type: file
+      description: Tabix index for germline VCF
+  - contamination_vcf:
+      type: file
+      description: Common variant VCF for contamination estimation (e.g. small_exac_common_3.hg38.vcf.gz)
+  - contamination_vcf_tbi:
+      type: file
+      description: Tabix index for contamination VCF
+  - sentieon_license:
+      type: string
+      description: Sentieon license server address (host:port) or license file path
+
+output:
+  vcf_tmp:
+    - meta:
+        type: map
+    - "*_tnhap2-tmp.vcf.gz":
+        type: file
+        description: Raw unfiltered somatic VCF from TNhaplotyper2
+  vcf_tmp_tbi:
+    - meta:
+        type: map
+    - "*_tnhap2-tmp.vcf.gz.tbi":
+        type: file
+        description: Tabix index for raw VCF
+  orientation:
+    - meta:
+        type: map
+    - "*_orientation":
+        type: file
+        description: Orientation bias priors from OrientationBias
+  contamination:
+    - meta:
+        type: map
+    - "*_contamination":
+        type: file
+        description: Contamination estimate from ContaminationModel
+  contamination_segments:
+    - meta:
+        type: map
+    - "*_contamination-segments":
+        type: file
+        description: Contamination segments from ContaminationModel
+
+authors:
+  - "@ramirobarrantes"
+maintainers:
+  - "@ramirobarrantes"

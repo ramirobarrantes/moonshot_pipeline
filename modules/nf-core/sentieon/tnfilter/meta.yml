@@ -1,0 +1,65 @@
+name: "sentieon_tnfilter"
+description: |
+  Filters the raw TNhaplotyper2 VCF using orientation bias priors and
+  contamination estimates to produce the final somatic VCF.
+keywords:
+  - somatic
+  - variant filtering
+  - sentieon
+  - tumor-normal
+tools:
+  - "sentieon":
+      description: "Sentieon genomics tools — TNfilter somatic variant filter"
+      homepage: "https://www.sentieon.com"
+      documentation: "https://support.sentieon.com/manual"
+      licence: ["Sentieon commercial license"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: Groovy Map with sample info (must include tumor_sample, normal_sample)
+    - vcf:
+        type: file
+        description: Raw VCF from SENTIEON_TNHAPLOTYPER2
+        pattern: "*_tnhap2-tmp.vcf.gz"
+    - vcf_tbi:
+        type: file
+        description: Tabix index for raw VCF
+    - orientation:
+        type: file
+        description: Orientation bias priors from OrientationBias
+    - contamination:
+        type: file
+        description: Contamination estimate from ContaminationModel
+    - contamination_segments:
+        type: file
+        description: Contamination segments from ContaminationModel
+  - fasta:
+      type: file
+      description: Reference genome FASTA
+  - fai:
+      type: file
+      description: Reference genome FASTA index
+  - sentieon_license:
+      type: string
+      description: Sentieon license server address (host:port) or license file path
+
+output:
+  vcf:
+    - meta:
+        type: map
+    - "*_tnhap2.vcf.gz":
+        type: file
+        description: Final filtered somatic VCF
+  tbi:
+    - meta:
+        type: map
+    - "*_tnhap2.vcf.gz.tbi":
+        type: file
+        description: Tabix index for final VCF
+
+authors:
+  - "@ramirobarrantes"
+maintainers:
+  - "@ramirobarrantes"

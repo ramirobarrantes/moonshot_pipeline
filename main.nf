@@ -18,6 +18,8 @@ include { HMMCOPY_READCOUNTER as READCOUNTER_TUMOR    } from './modules/nf-core/
 include { HMMCOPY_READCOUNTER as READCOUNTER_NORMAL   } from './modules/nf-core/hmmcopy/readcounter/main'
 include { ICHORCNA_RUN                                } from './modules/nf-core/ichorcna/run/main'
 include { ENSEMBLVEP_VEP                              } from './modules/nf-core/ensemblvep/vep/main'
+include { SENTIEON_TNHAPLOTYPER2                      } from './modules/nf-core/sentieon/tnhaplotyper2/main'
+include { SENTIEON_TNFILTER                           } from './modules/nf-core/sentieon/tnfilter/main'
 
 workflow {
 
@@ -34,7 +36,11 @@ workflow {
     ch_fai       = channel.fromPath(params.fai, checkIfExists: true).first()
     ch_dbsnp     = channel.fromPath(params.dbsnp, checkIfExists: true).first()
     ch_dbsnp_tbi = channel.fromPath(params.dbsnp_tbi, checkIfExists: true).first()
-    ch_vep_cache = params.vep_cache ? channel.fromPath(params.vep_cache, checkIfExists: true).first() : channel.value([])
+    ch_vep_cache          = params.vep_cache          ? channel.fromPath(params.vep_cache, checkIfExists: true).first()          : channel.value([])
+    ch_germline_vcf       = params.germline_vcf       ? channel.fromPath(params.germline_vcf, checkIfExists: true).first()       : channel.value([])
+    ch_germline_vcf_tbi   = params.germline_vcf_tbi   ? channel.fromPath(params.germline_vcf_tbi, checkIfExists: true).first()   : channel.value([])
+    ch_contamination_vcf  = params.contamination_vcf  ? channel.fromPath(params.contamination_vcf, checkIfExists: true).first()  : channel.value([])
+    ch_contamination_vcf_tbi = params.contamination_vcf_tbi ? channel.fromPath(params.contamination_vcf_tbi, checkIfExists: true).first() : channel.value([])
     ch_gc_wig    = params.gc_wig         ? channel.fromPath(params.gc_wig, checkIfExists: true).first()         : channel.value([])
     ch_map_wig   = params.map_wig        ? channel.fromPath(params.map_wig, checkIfExists: true).first()        : channel.value([])
     ch_centromere = params.centromere     ? channel.fromPath(params.centromere, checkIfExists: true).first()     : channel.value([])
@@ -51,12 +57,19 @@ workflow {
     ch_ref_fasta = ch_fasta.map { fasta -> tuple([id: 'reference'], fasta) }
 
     // -------------------------------------------------------------------------
-    // Parse samplesheet: patient,tumor_cram,tumor_crai,normal_cram,normal_crai
+    // Parse samplesheet
+    // Required: patient, tumor_cram, tumor_crai, normal_cram, normal_crai
+    // Optional: tumor_sample, normal_sample (SM tags in CRAM read groups;
+    //           required for TNScope — must match @RG SM: in the CRAM header)
     // -------------------------------------------------------------------------
     ch_input = channel.fromPath(params.input, checkIfExists: true)
         .splitCsv(header: true)
         .map { row ->
-            def meta = [id: row.patient]
+            def meta = [
+                id:            row.patient,
+                tumor_sample:  row.tumor_sample  ?: row.patient,
+                normal_sample: row.normal_sample ?: row.patient,
+            ]
             tuple(
                 meta,
                 file(row.tumor_cram, checkIfExists: true),
@@ -134,26 +147,6 @@ workflow {
     MUSE_SUMP(ch_sump_input)
 
     // -------------------------------------------------------------------------
-    // Step 2b: VEP annotation of somatic VCFs
-    // -------------------------------------------------------------------------
-
-    /*
-    Annotate somatic VCFs with Ensembl VEP using a local offline cache.
-    Flags (--everything, --filter_common, --per_gene, --total_length) are set
-    via ext.args in modules.config. Only runs when --vep_cache is supplied.
-    ensemblvep/vep input: tuple(meta, vcf, tbi), cache_dir, genome, cache_version
-    */
-    ch_vep_input = MUSE_SUMP.out.vcf
-        .join(MUSE_SUMP.out.tbi)
-
-    ENSEMBLVEP_VEP(
-        ch_vep_input,
-        ch_vep_cache,
-        params.vep_genome,
-        params.vep_cache_version
-    )
-
-    // -------------------------------------------------------------------------
     // Step 3: ichorCNA copy number analysis
     // -------------------------------------------------------------------------
 
@@ -191,5 +184,72 @@ workflow {
         ch_centromere,
         ch_rep_time,
         ch_exons
+    )
+
+    // -------------------------------------------------------------------------
+    // Step 4: TNScope somatic variant calling (Sentieon)
+    // -------------------------------------------------------------------------
+
+    /*
+    Run TNhaplotyper2 + OrientationBias + ContaminationModel in a single
+    sentieon driver call. Operates on CRAMs directly (no BAM conversion needed).
+    meta.tumor_sample and meta.normal_sample must match the SM tags in the
+    CRAM read groups (add tumor_sample/normal_sample columns to the samplesheet).
+    sentieon/tnhaplotyper2 input: tuple(meta, tumor_cram, tumor_crai, normal_cram, normal_crai),
+        fasta, fai, germline_vcf, germline_vcf_tbi, contamination_vcf, contamination_vcf_tbi, license
+    */
+    ch_tnscope_input = ch_input
+
+    SENTIEON_TNHAPLOTYPER2(
+        ch_tnscope_input,
+        ch_fasta,
+        ch_fai,
+        ch_germline_vcf,
+        ch_germline_vcf_tbi,
+        ch_contamination_vcf,
+        ch_contamination_vcf_tbi,
+        params.sentieon_license
+    )
+
+    /*
+    Filter the raw TNhaplotyper2 VCF using orientation bias and contamination
+    estimates to produce the final somatic VCF.
+    */
+    ch_tnfilter_input = SENTIEON_TNHAPLOTYPER2.out.vcf_tmp
+        .join(SENTIEON_TNHAPLOTYPER2.out.vcf_tmp_tbi)
+        .join(SENTIEON_TNHAPLOTYPER2.out.orientation)
+        .join(SENTIEON_TNHAPLOTYPER2.out.contamination)
+        .join(SENTIEON_TNHAPLOTYPER2.out.contamination_segments)
+
+    SENTIEON_TNFILTER(
+        ch_tnfilter_input,
+        ch_fasta,
+        ch_fai,
+        params.sentieon_license
+    )
+
+    // -------------------------------------------------------------------------
+    // Step 5: VEP annotation — MuSE and TNScope VCFs
+    // -------------------------------------------------------------------------
+
+    /*
+    Annotate somatic VCFs from both callers with Ensembl VEP using a local
+    offline cache. The two VCF channels are mixed so VEP runs once per sample
+    per caller. Skipped when --vep_cache is not supplied.
+    ensemblvep/vep input: tuple(meta, vcf, tbi), cache_dir, genome, cache_version
+    */
+    ch_muse_for_vep    = MUSE_SUMP.out.vcf.join(MUSE_SUMP.out.tbi)
+        .map { meta, vcf, tbi -> tuple(meta + [caller: 'muse'], vcf, tbi) }
+
+    ch_tnscope_for_vep = SENTIEON_TNFILTER.out.vcf.join(SENTIEON_TNFILTER.out.tbi)
+        .map { meta, vcf, tbi -> tuple(meta + [caller: 'tnscope'], vcf, tbi) }
+
+    ch_vep_input = ch_muse_for_vep.mix(ch_tnscope_for_vep)
+
+    ENSEMBLVEP_VEP(
+        ch_vep_input,
+        ch_vep_cache,
+        params.vep_genome,
+        params.vep_cache_version
     )
 }
