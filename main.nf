@@ -64,13 +64,16 @@ workflow {
             )
         }
 
-    // Split into tumor and normal channels
+    // Split into tumor and normal channels.
+    // Normal gets a distinct meta.id (_N suffix) so samtools/convert and
+    // hmmcopy/readcounter output different filenames from the tumor. The
+    // original patient id is preserved in meta.patient for re-joining later.
     ch_tumor_cram = ch_input.map { meta, tumor_cram, tumor_crai, _normal_cram, _normal_crai ->
         tuple(meta, tumor_cram, tumor_crai)
     }
 
     ch_normal_cram = ch_input.map { meta, _tumor_cram, _tumor_crai, normal_cram, normal_crai ->
-        tuple(meta, normal_cram, normal_crai)
+        tuple([id: "${meta.id}_N", patient: meta.id], normal_cram, normal_crai)
     }
 
     // -------------------------------------------------------------------------
@@ -92,9 +95,10 @@ workflow {
     ch_tumor_bam = SAMTOOLS_CONVERT_TUMOR.out.bam
         .join(SAMTOOLS_CONVERT_TUMOR.out.bai)
 
-    // Collect normal BAM + BAI
+    // Collect normal BAM + BAI; remap meta back to patient id for downstream joins
     ch_normal_bam = SAMTOOLS_CONVERT_NORMAL.out.bam
         .join(SAMTOOLS_CONVERT_NORMAL.out.bai)
+        .map { meta, bam, bai -> tuple([id: meta.patient], bam, bai) }
 
     // -------------------------------------------------------------------------
     // Step 2: MuSE somatic variant calling
@@ -147,13 +151,20 @@ workflow {
     to estimate copy number alterations and tumor fraction.
     ichorcna/run input: tuple(meta, wig), gc_wig, map_wig, normal_wig, normal_background, centromere, rep_time_wig, exons
     */
-    ch_normal_wig = READCOUNTER_NORMAL.out.wig.map { _meta, wig -> wig }
+    // Join normal wig to tumor wig by patient id so each tumor sample gets its
+    // paired normal wig rather than relying on channel ordering.
+    ch_normal_wig_keyed = READCOUNTER_NORMAL.out.wig
+        .map { meta, wig -> tuple([id: meta.patient], wig) }
+
+    ch_ichorcna_input = READCOUNTER_TUMOR.out.wig
+        .join(ch_normal_wig_keyed)
+        .map { meta, tumor_wig, normal_wig -> tuple(meta, tumor_wig, normal_wig) }
 
     ICHORCNA_RUN(
-        READCOUNTER_TUMOR.out.wig,
+        ch_ichorcna_input.map { meta, tumor_wig, _normal_wig -> tuple(meta, tumor_wig) },
         ch_gc_wig,
         ch_map_wig,
-        ch_normal_wig,
+        ch_ichorcna_input.map { _meta, _tumor_wig, normal_wig -> normal_wig },
         ch_pon,
         ch_centromere,
         ch_rep_time,
