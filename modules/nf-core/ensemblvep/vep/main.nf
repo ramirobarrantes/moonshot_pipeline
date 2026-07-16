@@ -30,7 +30,6 @@ process ENSEMBLVEP_VEP {
         --input_file   ${vcf} \\
         --output_file  ${prefix}.vep.vcf \\
         --vcf \\
-        --compress_output bgzip \\
         --format       vcf \\
         --assembly     ${genome} \\
         --cache \\
@@ -40,6 +39,7 @@ process ENSEMBLVEP_VEP {
         --fork         ${task.cpus} \\
         ${args}
 
+    bgzip --threads ${task.cpus} ${prefix}.vep.vcf
     tabix -p vcf ${prefix}.vep.vcf.gz
     """
 
