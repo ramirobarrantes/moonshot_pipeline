@@ -14,7 +14,7 @@ process GATK4_ASEREADCOUNTER {
     path fai
 
     output:
-    tuple val(meta), path("${prefix}.ase.csv"), emit: ase_counts
+    tuple val(meta), path("*.ase.csv"), emit: ase_counts
     tuple val("${task.process}"), val('gatk4'), eval("gatk --version 2>&1 | head -1 | sed 's/The Genome Analysis Toolkit (GATK) //'"), topic: versions, emit: versions
 
     when:
