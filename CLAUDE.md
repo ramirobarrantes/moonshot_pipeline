@@ -95,7 +95,8 @@ results/
   bam/normal/            # Normal BAMs
   muse/call/             # *.MuSE.txt intermediate files
   muse/sump/             # *.vcf.gz somatic SNV calls
-  vep/                   # *.vep.vcf.gz annotated VCFs + summary HTML
+  muse/annotation/       # VEP-annotated MuSE VCFs
+  tnscope/annotation/    # VEP-annotated TNScope VCFs
   hmmcopy/tumor/         # Tumor read count WIG
   hmmcopy/normal/        # Normal read count WIG
   ase/tumor/             # *.ase.csv allele counts (tumor BAM)

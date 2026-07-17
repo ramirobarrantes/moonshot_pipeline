@@ -220,15 +220,16 @@ results/
 │   └── normal/             # Converted normal BAMs (.bam + .bai)
 ├── muse/
 │   ├── call/               # MuSE intermediate files (*.MuSE.txt)
-│   └── sump/               # MuSE somatic VCFs (*.vcf.gz + .tbi)
+│   ├── sump/               # MuSE somatic VCFs (*.vcf.gz + .tbi)
+│   └── annotation/         # VEP-annotated MuSE VCFs (*.vep.vcf.gz + .tbi + .summary.html)
 ├── tnscope/
 │   ├── call/               # TNhaplotyper2 raw VCF + auxiliary files
 │   │   ├── *_tnhap2-tmp.vcf.gz
 │   │   ├── *_orientation
 │   │   ├── *_contamination
 │   │   └── *_contamination-segments
-│   └── filter/             # TNfilter final VCFs (*_tnhap2.vcf.gz + .tbi)
-├── vep/                    # Annotated VCFs for both callers (*.vep.vcf.gz + .tbi + .summary.html)
+│   ├── filter/             # TNfilter final VCFs (*_tnhap2.vcf.gz + .tbi)
+│   └── annotation/         # VEP-annotated TNScope VCFs (*.vep.vcf.gz + .tbi + .summary.html)
 ├── hmmcopy/
 │   ├── tumor/              # Tumor read count WIG files
 │   └── normal/             # Normal read count WIG files
