@@ -111,6 +111,7 @@ Multiple tumors can share the same normal — the pipeline pairs them correctly 
 | `--input` | Path to the samplesheet CSV |
 | `--fasta` | Reference genome FASTA |
 | `--fai` | Reference genome FASTA index (.fai) |
+| `--dict` | Reference sequence dictionary (.dict) — required by ASEReadCounter |
 | `--dbsnp` | dbSNP VCF (bgzipped, for MuSE sump) |
 | `--dbsnp_tbi` | dbSNP VCF tabix index (.tbi) |
 | `--gc_wig` | GC content WIG for ichorCNA (must match bin size) |

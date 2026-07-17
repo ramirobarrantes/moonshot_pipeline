@@ -12,6 +12,7 @@ process GATK4_ASEREADCOUNTER {
     tuple val(meta2), path(vcf), path(vcf_tbi)
     path fasta
     path fai
+    path dict
 
     output:
     tuple val(meta), path("*.ase.csv"), emit: ase_counts

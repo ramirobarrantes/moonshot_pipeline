@@ -45,6 +45,7 @@ One row per patient. All paths must be absolute or resolvable from the run direc
 |---|---|---|
 | `--input` | yes | Samplesheet CSV |
 | `--fasta` / `--fai` | yes | Reference genome + index |
+| `--dict` | no | Reference sequence dictionary (.dict) — required by ASEReadCounter |
 | `--dbsnp` / `--dbsnp_tbi` | yes | dbSNP VCF (bgzipped + tabix) |
 | `--gc_wig` | yes* | GC content wig (hmmcopy gcCounter) |
 | `--map_wig` | yes* | Mappability wig (hmmcopy mapCounter) |

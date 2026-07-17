@@ -39,6 +39,7 @@ workflow {
     // -------------------------------------------------------------------------
     ch_fasta     = channel.fromPath(params.fasta, checkIfExists: true).first()
     ch_fai       = channel.fromPath(params.fai, checkIfExists: true).first()
+    ch_dict      = params.dict ? channel.fromPath(params.dict, checkIfExists: true).first() : channel.value([])
     ch_dbsnp     = channel.fromPath(params.dbsnp, checkIfExists: true).first()
     ch_dbsnp_tbi = channel.fromPath(params.dbsnp_tbi, checkIfExists: true).first()
     ch_vep_cache          = params.vep_cache          ? channel.fromPath(params.vep_cache, checkIfExists: true).first()          : channel.value([])
@@ -336,7 +337,8 @@ workflow {
         ch_ase_tumor_input.map { meta, bam, bai, _vcf_tuple -> tuple(meta, bam, bai) },
         ch_ase_tumor_input.map { _meta, _bam, _bai, vcf_tuple -> vcf_tuple },
         ch_fasta,
-        ch_fai
+        ch_fai,
+        ch_dict
     )
 
     ch_ase_normal_input = ch_normal_bam
@@ -347,6 +349,7 @@ workflow {
         ch_ase_normal_input.map { meta, bam, bai, _vcf_tuple -> tuple(meta, bam, bai) },
         ch_ase_normal_input.map { _meta, _bam, _bai, vcf_tuple -> vcf_tuple },
         ch_fasta,
-        ch_fai
+        ch_fai,
+        ch_dict
     )
 }
