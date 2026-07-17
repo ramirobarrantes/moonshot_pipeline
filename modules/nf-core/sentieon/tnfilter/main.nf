@@ -6,7 +6,7 @@ process SENTIEON_TNFILTER {
     container "community.wave.seqera.io/library/sentieon:202503.01--1863def31ed8e4d5"
 
     input:
-    tuple val(meta), path(vcf), path(vcf_tbi), path(orientation), path(contamination), path(contamination_segments)
+    tuple val(meta), path(vcf), path(vcf_tbi), path(vcf_stats), path(orientation), path(contamination), path(contamination_segments)
     path fasta
     path fai
 

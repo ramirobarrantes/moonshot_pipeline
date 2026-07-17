@@ -17,6 +17,7 @@ process SENTIEON_TNHAPLOTYPER2 {
     output:
     tuple val(meta), path("${prefix}_tnhap2-tmp.vcf.gz"),          emit: vcf_tmp
     tuple val(meta), path("${prefix}_tnhap2-tmp.vcf.gz.tbi"),      emit: vcf_tmp_tbi
+    tuple val(meta), path("${prefix}_tnhap2-tmp.vcf.gz.stats"),    emit: vcf_tmp_stats
     tuple val(meta), path("${prefix}_orientation"),                 emit: orientation
     tuple val(meta), path("${prefix}_contamination"),               emit: contamination
     tuple val(meta), path("${prefix}_contamination-segments"),      emit: contamination_segments
@@ -59,6 +60,7 @@ process SENTIEON_TNHAPLOTYPER2 {
     """
     echo "" | gzip > ${prefix}_tnhap2-tmp.vcf.gz
     touch ${prefix}_tnhap2-tmp.vcf.gz.tbi
+    touch ${prefix}_tnhap2-tmp.vcf.gz.stats
     touch ${prefix}_orientation
     touch ${prefix}_contamination
     touch ${prefix}_contamination-segments

@@ -223,6 +223,7 @@ workflow {
     */
     ch_tnfilter_input = SENTIEON_TNHAPLOTYPER2.out.vcf_tmp
         .join(SENTIEON_TNHAPLOTYPER2.out.vcf_tmp_tbi)
+        .join(SENTIEON_TNHAPLOTYPER2.out.vcf_tmp_stats)
         .join(SENTIEON_TNHAPLOTYPER2.out.orientation)
         .join(SENTIEON_TNHAPLOTYPER2.out.contamination)
         .join(SENTIEON_TNHAPLOTYPER2.out.contamination_segments)
