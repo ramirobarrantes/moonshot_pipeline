@@ -67,8 +67,9 @@ workflow {
         .map { row ->
             def meta = [
                 id:            row.patient,
-                tumor_sample:  row.tumor_sample  ?: row.patient,
-                normal_sample: row.normal_sample ?: (row.patient + '_NORMAL'),
+                // Strip leading "SM:" if the user copied it from samtools @RG output
+                tumor_sample:  (row.tumor_sample  ?: row.patient).replaceAll(/^SM:/, ''),
+                normal_sample: (row.normal_sample ?: (row.patient + '_NORMAL')).replaceAll(/^SM:/, ''),
             ]
             tuple(
                 meta,
