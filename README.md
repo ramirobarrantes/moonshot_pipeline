@@ -12,12 +12,15 @@ CRAM (tumor + normal)
     │       ├── MuSE call ──► MuSE sump ──────────────────┐
     │       │                                              │
     │       ├── hmmcopy/readcounter ──► ichorCNA           ├──► VEP annotation ──► Annotated VCFs
-    │       │   (tumor + normal)       CNA + tumor fraction│
-    │       │                                              │
-    │       └── AMBER ──► COBALT ──► Purple ◄─────────────┘
-    │           BAFs      read ratios  purity + ploidy
+    │       │   (tumor + normal)       CNA + tumor fraction│                              │
+    │       │                                              │                              │
+    │       ├── AMBER ──► COBALT ──► Purple ◄─────────────┘                              │
+    │       │   BAFs      read ratios  purity + ploidy                                   │
+    │       │                                                                             │
+    │       └── ASEReadCounter (tumor + normal) ◄─────────────────────────────────────── ┘
+    │           allele counts at somatic SNP sites
     │
-    └── Sentieon TNhaplotyper2 ──► TNfilter ─────────────►─┘
+    └── Sentieon TNhaplotyper2 ──► TNfilter ─────────────────────────────────────────────┘
         (CRAMs direct, no BAM needed)
 ```
 
@@ -47,6 +50,7 @@ nextflow run main.nf \
     --input assets/samplesheet.csv \
     --fasta /path/to/genome.fa \
     --fai /path/to/genome.fa.fai \
+    --dict /path/to/genome.dict \
     --dbsnp /path/to/dbsnp.vcf.gz \
     --dbsnp_tbi /path/to/dbsnp.vcf.gz.tbi \
     --gc_wig /path/to/gc_hg38_1000kb.wig \
@@ -111,7 +115,7 @@ Multiple tumors can share the same normal — the pipeline pairs them correctly 
 | `--input` | Path to the samplesheet CSV |
 | `--fasta` | Reference genome FASTA |
 | `--fai` | Reference genome FASTA index (.fai) |
-| `--dict` | Reference sequence dictionary (.dict) — required by ASEReadCounter |
+| `--dict` | Reference sequence dictionary (`.dict`) — required by ASEReadCounter |
 | `--dbsnp` | dbSNP VCF (bgzipped, for MuSE sump) |
 | `--dbsnp_tbi` | dbSNP VCF tabix index (.tbi) |
 | `--gc_wig` | GC content WIG for ichorCNA (must match bin size) |
