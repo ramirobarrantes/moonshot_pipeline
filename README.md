@@ -1,6 +1,6 @@
 # Somatic Variant Calling + Copy Number Analysis Pipeline
 
-A Nextflow DSL2 pipeline for **somatic variant calling** (MuSE + Sentieon TNScope), **VEP annotation**, and **copy number alteration estimation** (ichorCNA) from matched tumor/normal CRAM pairs.
+A Nextflow DSL2 pipeline for **somatic variant calling** (MuSE + Sentieon TNScope), **VEP annotation**, **copy number alteration estimation** (ichorCNA), and **tumor purity and ploidy estimation** (Purple) from matched tumor/normal CRAM pairs.
 
 ## Overview
 
@@ -11,10 +11,13 @@ CRAM (tumor + normal)
     │       │
     │       ├── MuSE call ──► MuSE sump ──────────────────┐
     │       │                                              │
-    │       └── hmmcopy/readcounter ──► ichorCNA           ├──► VEP annotation ──► Annotated VCFs
-    │           (tumor + normal)       CNA + tumor fraction│
-    │                                                      │
-    └── Sentieon TNhaplotyper2 ──► TNfilter ───────────────┘
+    │       ├── hmmcopy/readcounter ──► ichorCNA           ├──► VEP annotation ──► Annotated VCFs
+    │       │   (tumor + normal)       CNA + tumor fraction│
+    │       │                                              │
+    │       └── AMBER ──► COBALT ──► Purple ◄─────────────┘
+    │           BAFs      read ratios  purity + ploidy
+    │
+    └── Sentieon TNhaplotyper2 ──► TNfilter ─────────────►─┘
         (CRAMs direct, no BAM needed)
 ```
 
@@ -28,6 +31,9 @@ CRAM (tumor + normal)
 | 4a | Sentieon TNhaplotyper2 | Somatic calling + orientation bias + contamination model |
 | 4b | Sentieon TNfilter | Filter raw VCF → final somatic VCF |
 | 5 | Ensembl VEP | Annotate MuSE and TNScope VCFs (offline cache) |
+| 6a | AMBER | B-allele frequencies from tumor + normal BAMs |
+| 6b | COBALT | Read-depth ratios from tumor + normal BAMs |
+| 6c | PURPLE | Tumor purity, ploidy, and copy number segments |
 
 All modules follow [nf-core/modules](https://github.com/nf-core/modules) conventions.
 
@@ -49,6 +55,9 @@ nextflow run main.nf \
     --contamination_vcf /path/to/small_exac_common_3.hg38.vcf.gz \
     --contamination_vcf_tbi /path/to/small_exac_common_3.hg38.vcf.gz.tbi \
     --vep_cache /path/to/.vep \
+    --het_pon /path/to/GermlineHetPon.hg38.vcf.gz \
+    --het_pon_tbi /path/to/GermlineHetPon.hg38.vcf.gz.tbi \
+    --gc_profile /path/to/GC_profile.1000bp.38.cnp \
     --outdir results \
     -resume
 ```
@@ -106,6 +115,15 @@ Multiple tumors can share the same normal — the pipeline pairs them correctly 
 | `--gc_wig` | GC content WIG for ichorCNA (must match bin size) |
 | `--map_wig` | Mappability WIG for ichorCNA (must match bin size) |
 
+### Purple — required to run Steps 6a–6c
+
+| Parameter | Description |
+|-----------|-------------|
+| `--het_pon` | HMF germline het PON VCF (`GermlineHetPon.hg38.vcf.gz`) |
+| `--het_pon_tbi` | Tabix index for het PON |
+| `--gc_profile` | HMF GC profile CNP file (`GC_profile.1000bp.38.cnp`) |
+| `--ref_genome_version` | HMF genome version string (default `V38`) |
+
 ### TNScope (Sentieon) — required to run Steps 4–5
 
 | Parameter | Description |
@@ -158,6 +176,21 @@ apptainer exec docker://ensemblorg/ensembl-vep:release_114.0 \
     vep_install -a cf -s homo_sapiens -y GRCh38 --CACHE_VERSION 114 -c ~/.vep
 ```
 
+### Purple reference files (`--het_pon`, `--gc_profile`)
+
+Download from the HMF public resources bucket:
+
+```bash
+# GermlineHetPon — heterozygous SNP positions for AMBER BAF calculation
+gsutil cp gs://hmf-public/HMFtools-Resources/dna_pipeline/v5_34/38/variants/GermlineHetPon.38.vcf.gz .
+tabix -p vcf GermlineHetPon.38.vcf.gz
+
+# GC profile — GC content per 1 kb window for COBALT and PURPLE
+gsutil cp gs://hmf-public/HMFtools-Resources/dna_pipeline/v5_34/38/copy_number/GC_profile.1000bp.38.cnp .
+```
+
+Both files are required. The GC profile format (`.cnp`) is different from the WIG file used by ichorCNA.
+
 ### Sentieon license and installation
 
 Sentieon reads its license and binary location from environment variables. Set these before running the pipeline (e.g. in your `~/.bashrc` or Slurm job preamble):
@@ -193,6 +226,17 @@ results/
 ├── hmmcopy/
 │   ├── tumor/              # Tumor read count WIG files
 │   └── normal/             # Normal read count WIG files
+├── purple/
+│   ├── amber/              # AMBER BAF outputs
+│   ├── cobalt/             # COBALT ratio outputs
+│   ├── *.purple.purity.tsv         # Purity and ploidy estimates
+│   ├── *.purple.purity.range.tsv   # Purity confidence range
+│   ├── *.purple.qc                 # QC metrics
+│   ├── *.purple.cnv.somatic.tsv    # Somatic copy number segments
+│   ├── *.purple.cnv.gene.tsv       # Per-gene copy number
+│   ├── *.purple.segment.tsv        # All copy number segments
+│   ├── *.purple.somatic.vcf.gz     # Somatic VCF with CN context
+│   └── plot/                       # Purity, ploidy, and CN plots
 └── ichorcna/
     ├── *.seg               # Copy number segments
     ├── *.cna.seg

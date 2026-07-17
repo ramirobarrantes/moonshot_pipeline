@@ -6,9 +6,11 @@ Somatic variant calling and copy number analysis from matched tumor/normal CRAM 
 
 **Workflow (`main.nf`):**
 1. **CRAM → BAM** — `samtools/convert` for tumor and normal independently
-2. **Somatic SNVs** — `muse/call` then `muse/sump` (WGS `-G` or WXS `-E` mode)
-3. **VEP annotation** — `ensemblvep/vep` annotates the MuSE VCF (requires `--vep_cache`)
-4. **Copy number** — `hmmcopy/readcounter` on both BAMs → `ichorcna/run`
+2. **Somatic SNVs (MuSE)** — `muse/call` then `muse/sump` (WGS `-G` or WXS `-E` mode)
+3. **Copy number (ichorCNA)** — `hmmcopy/readcounter` on both BAMs → `ichorcna/run`
+4. **Somatic SNVs (TNScope)** — `sentieon/tnhaplotyper2` then `sentieon/tnfilter` (requires Sentieon license)
+5. **VEP annotation** — `ensemblvep/vep` annotates both MuSE and TNScope VCFs (requires `--vep_cache`)
+6. **Tumor purity (Purple)** — `hmftools/amber` → `hmftools/cobalt` → `hmftools/purple`
 
 ## Running the pipeline
 
@@ -50,6 +52,10 @@ One row per patient. All paths must be absolute or resolvable from the run direc
 | `--rep_time_wig` | no | Replication timing wig |
 | `--exons` | no | Exon BED for annotation |
 | `--wgs` | no | `true` (default) = WGS, `false` = WXS |
+| `--het_pon` | no | HMF GermlineHetPon VCF for AMBER |
+| `--het_pon_tbi` | no | Tabix index for het PON |
+| `--gc_profile` | no | HMF GC profile CNP for COBALT + PURPLE |
+| `--ref_genome_version` | no | HMF ref genome version (default `V38`) |
 | `--vep_cache` | no | Path to VEP cache directory (`~/.vep`) |
 | `--vep_genome` | no | Assembly name for VEP (default `GRCh38`) |
 | `--vep_cache_version` | no | VEP cache version (default `114`) |
@@ -69,6 +75,11 @@ modules/nf-core/
   ensemblvep/vep/        # VEP annotation of somatic VCFs
   hmmcopy/readcounter/   # Read counting → WIG
   ichorcna/run/          # CNA + tumor fraction estimation
+  sentieon/tnhaplotyper2/  # TNhaplotyper2 + OrientationBias + ContaminationModel
+  sentieon/tnfilter/       # TNfilter → final somatic VCF
+  hmftools/amber/          # B-allele frequencies (Purple prereq)
+  hmftools/cobalt/         # Read-depth ratios (Purple prereq)
+  hmftools/purple/         # Tumor purity, ploidy, copy number
 ```
 
 Each module has `main.nf`, `meta.yml`, `environment.yml`, and `tests/`.

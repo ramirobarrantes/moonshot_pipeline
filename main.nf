@@ -20,6 +20,9 @@ include { ICHORCNA_RUN                                } from './modules/nf-core/
 include { ENSEMBLVEP_VEP                              } from './modules/nf-core/ensemblvep/vep/main'
 include { SENTIEON_TNHAPLOTYPER2                      } from './modules/nf-core/sentieon/tnhaplotyper2/main'
 include { SENTIEON_TNFILTER                           } from './modules/nf-core/sentieon/tnfilter/main'
+include { HMFTOOLS_AMBER                              } from './modules/nf-core/hmftools/amber/main'
+include { HMFTOOLS_COBALT                             } from './modules/nf-core/hmftools/cobalt/main'
+include { HMFTOOLS_PURPLE                             } from './modules/nf-core/hmftools/purple/main'
 
 workflow {
 
@@ -37,6 +40,9 @@ workflow {
     ch_dbsnp     = channel.fromPath(params.dbsnp, checkIfExists: true).first()
     ch_dbsnp_tbi = channel.fromPath(params.dbsnp_tbi, checkIfExists: true).first()
     ch_vep_cache          = params.vep_cache          ? channel.fromPath(params.vep_cache, checkIfExists: true).first()          : channel.value([])
+    ch_het_pon            = params.het_pon            ? channel.fromPath(params.het_pon, checkIfExists: true).first()            : channel.value([])
+    ch_het_pon_tbi        = params.het_pon_tbi        ? channel.fromPath(params.het_pon_tbi, checkIfExists: true).first()        : channel.value([])
+    ch_gc_profile         = params.gc_profile         ? channel.fromPath(params.gc_profile, checkIfExists: true).first()         : channel.value([])
     ch_germline_vcf       = params.germline_vcf       ? channel.fromPath(params.germline_vcf, checkIfExists: true).first()       : channel.value([])
     ch_germline_vcf_tbi   = params.germline_vcf_tbi   ? channel.fromPath(params.germline_vcf_tbi, checkIfExists: true).first()   : channel.value([])
     ch_contamination_vcf  = params.contamination_vcf  ? channel.fromPath(params.contamination_vcf, checkIfExists: true).first()  : channel.value([])
@@ -250,5 +256,58 @@ workflow {
         ch_vep_cache,
         params.vep_genome,
         params.vep_cache_version
+    )
+
+    // -------------------------------------------------------------------------
+    // Step 6: Purple — tumor purity and ploidy estimation
+    // -------------------------------------------------------------------------
+
+    /*
+    AMBER computes B-allele frequencies from the tumor and matched normal BAMs.
+    hmftools/amber input: tuple(meta, tumor_bam, tumor_bai, normal_bam, normal_bai),
+        fasta, fai, het_pon, het_pon_tbi, ref_genome_version
+    */
+    ch_purple_bam_input = ch_tumor_bam
+        .join(ch_normal_bam)
+
+    HMFTOOLS_AMBER(
+        ch_purple_bam_input,
+        ch_fasta,
+        ch_fai,
+        ch_het_pon,
+        ch_het_pon_tbi,
+        params.ref_genome_version
+    )
+
+    /*
+    COBALT computes read-depth ratios from the tumor and matched normal BAMs.
+    hmftools/cobalt input: tuple(meta, tumor_bam, tumor_bai, normal_bam, normal_bai),
+        fasta, fai, gc_profile
+    */
+    HMFTOOLS_COBALT(
+        ch_purple_bam_input,
+        ch_fasta,
+        ch_fai,
+        ch_gc_profile
+    )
+
+    /*
+    PURPLE estimates tumor purity and ploidy from AMBER BAFs, COBALT read
+    ratios, and the TNScope somatic VCF. The somatic VCF improves SNV
+    copy-number context annotation but is optional.
+    hmftools/purple input: tuple(meta, amber_dir, cobalt_dir, somatic_vcf, somatic_vcf_tbi),
+        fasta, fai, gc_profile, ref_genome_version
+    */
+    ch_purple_input = HMFTOOLS_AMBER.out.amber_dir
+        .join(HMFTOOLS_COBALT.out.cobalt_dir)
+        .join(SENTIEON_TNFILTER.out.vcf)
+        .join(SENTIEON_TNFILTER.out.tbi)
+
+    HMFTOOLS_PURPLE(
+        ch_purple_input,
+        ch_fasta,
+        ch_fai,
+        ch_gc_profile,
+        params.ref_genome_version
     )
 }
