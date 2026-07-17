@@ -17,7 +17,8 @@ include { MUSE_SUMP                                   } from './modules/nf-core/
 include { HMMCOPY_READCOUNTER as READCOUNTER_TUMOR    } from './modules/nf-core/hmmcopy/readcounter/main'
 include { HMMCOPY_READCOUNTER as READCOUNTER_NORMAL   } from './modules/nf-core/hmmcopy/readcounter/main'
 include { ICHORCNA_RUN                                } from './modules/nf-core/ichorcna/run/main'
-include { ENSEMBLVEP_VEP                              } from './modules/nf-core/ensemblvep/vep/main'
+include { ENSEMBLVEP_VEP as ENSEMBLVEP_VEP_MUSE       } from './modules/nf-core/ensemblvep/vep/main'
+include { ENSEMBLVEP_VEP as ENSEMBLVEP_VEP_TNSCOPE    } from './modules/nf-core/ensemblvep/vep/main'
 include { SENTIEON_TNHAPLOTYPER2                      } from './modules/nf-core/sentieon/tnhaplotyper2/main'
 include { SENTIEON_TNFILTER                           } from './modules/nf-core/sentieon/tnfilter/main'
 include { GATK4_ASEREADCOUNTER as GATK4_ASEREADCOUNTER_TUMOR  } from './modules/nf-core/gatk4/asereadcounter/main'
@@ -248,15 +249,17 @@ workflow {
     ensemblvep/vep input: tuple(meta, vcf, tbi), cache_dir, genome, cache_version
     */
     ch_muse_for_vep    = MUSE_SUMP.out.vcf.join(MUSE_SUMP.out.tbi)
-        .map { meta, vcf, tbi -> tuple(meta + [caller: 'muse',    id: "${meta.id}_muse"],    vcf, tbi) }
-
     ch_tnscope_for_vep = SENTIEON_TNFILTER.out.vcf.join(SENTIEON_TNFILTER.out.tbi)
-        .map { meta, vcf, tbi -> tuple(meta + [caller: 'tnscope', id: "${meta.id}_tnscope"], vcf, tbi) }
 
-    ch_vep_input = ch_muse_for_vep.mix(ch_tnscope_for_vep)
+    ENSEMBLVEP_VEP_MUSE(
+        ch_muse_for_vep,
+        ch_vep_cache,
+        params.vep_genome,
+        params.vep_cache_version
+    )
 
-    ENSEMBLVEP_VEP(
-        ch_vep_input,
+    ENSEMBLVEP_VEP_TNSCOPE(
+        ch_tnscope_for_vep,
         ch_vep_cache,
         params.vep_genome,
         params.vep_cache_version
