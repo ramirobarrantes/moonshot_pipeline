@@ -34,6 +34,7 @@ CRAM (tumor + normal)
 | 6a | AMBER | B-allele frequencies from tumor + normal BAMs |
 | 6b | COBALT | Read-depth ratios from tumor + normal BAMs |
 | 6c | PURPLE | Tumor purity, ploidy, and copy number segments |
+| 7 | GATK4 ASEReadCounter | Allele-specific read counts at somatic SNV sites (tumor + normal) |
 
 All modules follow [nf-core/modules](https://github.com/nf-core/modules) conventions.
 
@@ -226,6 +227,9 @@ results/
 ├── hmmcopy/
 │   ├── tumor/              # Tumor read count WIG files
 │   └── normal/             # Normal read count WIG files
+├── ase/
+│   ├── tumor/              # *.ase.csv — allele counts at somatic SNV sites in tumor BAM
+│   └── normal/             # *.ase.csv — allele counts at somatic SNV sites in normal BAM
 ├── purple/
 │   ├── amber/              # AMBER BAF outputs
 │   ├── cobalt/             # COBALT ratio outputs

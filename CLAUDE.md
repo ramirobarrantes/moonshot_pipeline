@@ -11,6 +11,7 @@ Somatic variant calling and copy number analysis from matched tumor/normal CRAM 
 4. **Somatic SNVs (TNScope)** — `sentieon/tnhaplotyper2` then `sentieon/tnfilter` (requires Sentieon license)
 5. **VEP annotation** — `ensemblvep/vep` annotates both MuSE and TNScope VCFs (requires `--vep_cache`)
 6. **Tumor purity (Purple)** — `hmftools/amber` → `hmftools/cobalt` → `hmftools/purple`
+7. **Allele-specific expression** — `gatk4/asereadcounter` counts reads at biallelic somatic SNP sites in both tumor and normal BAMs
 
 ## Running the pipeline
 
@@ -80,6 +81,7 @@ modules/nf-core/
   hmftools/amber/          # B-allele frequencies (Purple prereq)
   hmftools/cobalt/         # Read-depth ratios (Purple prereq)
   hmftools/purple/         # Tumor purity, ploidy, copy number
+  gatk4/asereadcounter/    # Allele-specific read counts at somatic SNP sites
 ```
 
 Each module has `main.nf`, `meta.yml`, `environment.yml`, and `tests/`.
@@ -95,6 +97,8 @@ results/
   vep/                   # *.vep.vcf.gz annotated VCFs + summary HTML
   hmmcopy/tumor/         # Tumor read count WIG
   hmmcopy/normal/        # Normal read count WIG
+  ase/tumor/             # *.ase.csv allele counts (tumor BAM)
+  ase/normal/            # *.ase.csv allele counts (normal BAM)
   ichorcna/              # Segments, params, corrected depth, RData
   ichorcna/plots/        # PDF plots
 ```

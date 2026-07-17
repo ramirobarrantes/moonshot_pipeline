@@ -20,6 +20,8 @@ include { ICHORCNA_RUN                                } from './modules/nf-core/
 include { ENSEMBLVEP_VEP                              } from './modules/nf-core/ensemblvep/vep/main'
 include { SENTIEON_TNHAPLOTYPER2                      } from './modules/nf-core/sentieon/tnhaplotyper2/main'
 include { SENTIEON_TNFILTER                           } from './modules/nf-core/sentieon/tnfilter/main'
+include { GATK4_ASEREADCOUNTER as GATK4_ASEREADCOUNTER_TUMOR  } from './modules/nf-core/gatk4/asereadcounter/main'
+include { GATK4_ASEREADCOUNTER as GATK4_ASEREADCOUNTER_NORMAL } from './modules/nf-core/gatk4/asereadcounter/main'
 include { HMFTOOLS_AMBER                              } from './modules/nf-core/hmftools/amber/main'
 include { HMFTOOLS_COBALT                             } from './modules/nf-core/hmftools/cobalt/main'
 include { HMFTOOLS_PURPLE                             } from './modules/nf-core/hmftools/purple/main'
@@ -310,5 +312,41 @@ workflow {
         ch_fai,
         ch_gc_profile,
         params.ref_genome_version
+    )
+
+    // -------------------------------------------------------------------------
+    // Step 7: ASEReadCounter — allele-specific read counts at somatic SNV sites
+    // -------------------------------------------------------------------------
+
+    /*
+    SelectVariants filters the TNScope VCF to passing biallelic SNPs, then
+    ASEReadCounter measures the allelic read depth at each site in the tumor
+    and matched normal BAMs. The meta2 tuple carries the VCF so it is
+    broadcast to every BAM sample by key.
+    gatk4/asereadcounter input: tuple(meta, bam, bai), tuple(meta2, vcf, vcf_tbi), fasta, fai
+    */
+    ch_ase_vcf = SENTIEON_TNFILTER.out.vcf
+        .join(SENTIEON_TNFILTER.out.tbi)
+
+    ch_ase_tumor_input = ch_tumor_bam
+        .join(ch_ase_vcf)
+        .map { meta, bam, bai, vcf, tbi -> tuple(meta, bam, bai, tuple(meta, vcf, tbi)) }
+
+    GATK4_ASEREADCOUNTER_TUMOR(
+        ch_ase_tumor_input.map { meta, bam, bai, _vcf_tuple -> tuple(meta, bam, bai) },
+        ch_ase_tumor_input.map { _meta, _bam, _bai, vcf_tuple -> vcf_tuple },
+        ch_fasta,
+        ch_fai
+    )
+
+    ch_ase_normal_input = ch_normal_bam
+        .join(ch_ase_vcf)
+        .map { meta, bam, bai, vcf, tbi -> tuple(meta, bam, bai, tuple(meta, vcf, tbi)) }
+
+    GATK4_ASEREADCOUNTER_NORMAL(
+        ch_ase_normal_input.map { meta, bam, bai, _vcf_tuple -> tuple(meta, bam, bai) },
+        ch_ase_normal_input.map { _meta, _bam, _bai, vcf_tuple -> vcf_tuple },
+        ch_fasta,
+        ch_fai
     )
 }
