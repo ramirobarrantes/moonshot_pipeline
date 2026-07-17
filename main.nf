@@ -248,10 +248,10 @@ workflow {
     ensemblvep/vep input: tuple(meta, vcf, tbi), cache_dir, genome, cache_version
     */
     ch_muse_for_vep    = MUSE_SUMP.out.vcf.join(MUSE_SUMP.out.tbi)
-        .map { meta, vcf, tbi -> tuple(meta + [caller: 'muse'], vcf, tbi) }
+        .map { meta, vcf, tbi -> tuple(meta + [caller: 'muse',    id: "${meta.id}_muse"],    vcf, tbi) }
 
     ch_tnscope_for_vep = SENTIEON_TNFILTER.out.vcf.join(SENTIEON_TNFILTER.out.tbi)
-        .map { meta, vcf, tbi -> tuple(meta + [caller: 'tnscope'], vcf, tbi) }
+        .map { meta, vcf, tbi -> tuple(meta + [caller: 'tnscope', id: "${meta.id}_tnscope"], vcf, tbi) }
 
     ch_vep_input = ch_muse_for_vep.mix(ch_tnscope_for_vep)
 
