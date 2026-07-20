@@ -310,7 +310,8 @@ workflow {
         ch_purple_bam_input,
         ch_fasta,
         ch_fai,
-        ch_gc_profile
+        ch_gc_profile,
+        params.ref_genome_version
     )
 
     /*

@@ -12,6 +12,7 @@ process HMFTOOLS_COBALT {
     path fasta
     path fai
     path gc_profile
+    val ref_genome_version
 
     output:
     tuple val(meta), path("cobalt_out"), emit: cobalt_dir
@@ -34,8 +35,9 @@ process HMFTOOLS_COBALT {
         -reference        ${normal_sm} \\
         -reference_bam    ${normal_bam} \\
         -output_dir       cobalt_out \\
-        -gc_profile       ${gc_profile} \\
-        -ref_genome       ${fasta} \\
+        -gc_profile           ${gc_profile} \\
+        -ref_genome           ${fasta} \\
+        -ref_genome_version   ${ref_genome_version} \\
         -threads          ${task.cpus} \\
         ${args}
     """
