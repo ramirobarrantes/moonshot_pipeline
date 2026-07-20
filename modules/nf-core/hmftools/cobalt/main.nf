@@ -24,9 +24,11 @@ process HMFTOOLS_COBALT {
     def args      = task.ext.args ?: ''
     def tumor_sm  = meta.tumor_sample  ?: meta.id
     def normal_sm = meta.normal_sample ?: meta.id
+    def avail_mem = task.memory ? "-Xmx${(task.memory.mega * 0.85).intValue()}m" : '-Xmx8g'
     """
     mkdir -p cobalt_out
 
+    export JAVA_TOOL_OPTIONS="${avail_mem}"
     cobalt \\
         -tumor            ${tumor_sm} \\
         -tumor_bam        ${tumor_bam} \\
