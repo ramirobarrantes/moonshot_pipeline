@@ -5,7 +5,7 @@ process HMFTOOLS_COBALT {
     conda "${moduleDir}/environment.yml"
     container "${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container
         ? 'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/7b/7b3a7d5d6ab2d12cb8f5742aa8fbb0d69e44b2f05e5efdc9b4a56f3d3f1bc29a/data'
-        : 'community.wave.seqera.io/library/hmftools-cobalt:2.0--hdfd78af_0'}"
+        : 'community.wave.seqera.io/library/hmftools-cobalt:3.0--hdfd78af_0'}"
 
     input:
     tuple val(meta), path(tumor_bam), path(tumor_bai), path(normal_bam), path(normal_bai)
