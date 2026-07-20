@@ -117,9 +117,13 @@ workflow {
     */
     SAMTOOLS_CONVERT_NORMAL(ch_normal_cram, ch_ref)
 
-    // Collect tumor BAM + BAI
+    // Collect tumor BAM + BAI (full meta — tumor_sample/normal_sample preserved for TNScope)
     ch_tumor_bam = SAMTOOLS_CONVERT_TUMOR.out.bam
         .join(SAMTOOLS_CONVERT_TUMOR.out.bai)
+
+    // id-only meta version for joining with ch_normal_bam (which carries only [id:])
+    ch_tumor_bam_id = ch_tumor_bam
+        .map { meta, bam, bai -> tuple([id: meta.id], bam, bai) }
 
     // Collect normal BAM + BAI; remap meta back to patient id for downstream joins
     ch_normal_bam = SAMTOOLS_CONVERT_NORMAL.out.bam
@@ -134,7 +138,7 @@ workflow {
     Combine tumor and normal BAMs with the reference FASTA for MuSE call.
     muse/call input: tuple(meta, tumor_bam, tumor_bai, normal_bam, normal_bai, reference)
     */
-    ch_muse_input = ch_tumor_bam
+    ch_muse_input = ch_tumor_bam_id
         .join(ch_normal_bam)
         .combine(ch_fasta)
         .map { meta, tumor_bam, tumor_bai, normal_bam, normal_bai, fasta ->
@@ -274,7 +278,7 @@ workflow {
     hmftools/amber input: tuple(meta, tumor_bam, tumor_bai, normal_bam, normal_bai),
         fasta, fai, het_pon, het_pon_tbi, ref_genome_version
     */
-    ch_purple_bam_input = ch_tumor_bam
+    ch_purple_bam_input = ch_tumor_bam_id
         .join(ch_normal_bam)
 
     HMFTOOLS_AMBER(
@@ -307,8 +311,8 @@ workflow {
     */
     ch_purple_input = HMFTOOLS_AMBER.out.amber_dir
         .join(HMFTOOLS_COBALT.out.cobalt_dir)
-        .join(SENTIEON_TNFILTER.out.vcf)
-        .join(SENTIEON_TNFILTER.out.tbi)
+        .join(SENTIEON_TNFILTER.out.vcf.map  { meta, vcf     -> tuple([id: meta.id], vcf) })
+        .join(SENTIEON_TNFILTER.out.tbi.map  { meta, tbi     -> tuple([id: meta.id], tbi) })
 
     HMFTOOLS_PURPLE(
         ch_purple_input,
@@ -329,10 +333,12 @@ workflow {
     broadcast to every BAM sample by key.
     gatk4/asereadcounter input: tuple(meta, bam, bai), tuple(meta2, vcf, vcf_tbi), fasta, fai
     */
+    // Normalize TNScope VCF meta to id-only so it joins with BAM channels
     ch_ase_vcf = SENTIEON_TNFILTER.out.vcf
         .join(SENTIEON_TNFILTER.out.tbi)
+        .map { meta, vcf, tbi -> tuple([id: meta.id], vcf, tbi) }
 
-    ch_ase_tumor_input = ch_tumor_bam
+    ch_ase_tumor_input = ch_tumor_bam_id
         .join(ch_ase_vcf)
         .map { meta, bam, bai, vcf, tbi -> tuple(meta, bam, bai, tuple(meta, vcf, tbi)) }
 
