@@ -4,15 +4,14 @@ process HMFTOOLS_COBALT {
 
     conda "${moduleDir}/environment.yml"
     container "${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container
-        ? 'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/7b/7b3a7d5d6ab2d12cb8f5742aa8fbb0d69e44b2f05e5efdc9b4a56f3d3f1bc29a/data'
-        : 'community.wave.seqera.io/library/hmftools-cobalt:3.0--hdfd78af_0'}"
+        ? 'https://depot.galaxyproject.org/singularity/hmftools-cobalt:2.2--hdfd78af_0'
+        : 'quay.io/biocontainers/hmftools-cobalt:2.2--hdfd78af_0'}"
 
     input:
     tuple val(meta), path(tumor_bam), path(tumor_bai), path(normal_bam), path(normal_bai)
     path fasta
     path fai
     path gc_profile
-    val ref_genome_version
 
     output:
     tuple val(meta), path("cobalt_out"), emit: cobalt_dir
@@ -35,9 +34,8 @@ process HMFTOOLS_COBALT {
         -reference        ${normal_sm} \\
         -reference_bam    ${normal_bam} \\
         -output_dir       cobalt_out \\
-        -gc_profile           ${gc_profile} \\
-        -ref_genome           ${fasta} \\
-        -ref_genome_version   ${ref_genome_version} \\
+        -gc_profile       ${gc_profile} \\
+        -ref_genome       ${fasta} \\
         -threads          ${task.cpus} \\
         ${args}
     """
