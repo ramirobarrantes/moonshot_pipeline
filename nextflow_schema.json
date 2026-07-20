@@ -1,0 +1,169 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/ramirobarrantes/moonshot_pipeline/main/nextflow_schema.json",
+    "title": "moonshot_pipeline pipeline parameters",
+    "description": "Somatic variant calling and copy number analysis from matched tumor/normal CRAM pairs.",
+    "type": "object",
+    "$defs": {
+        "input_output": {
+            "title": "Input/output",
+            "type": "object",
+            "properties": {
+                "input": {
+                    "type": "string",
+                    "description": "Path to samplesheet CSV.",
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "outdir": {
+                    "type": "string",
+                    "description": "Output directory.",
+                    "default": "./results",
+                    "fa_icon": "fas fa-folder-open"
+                }
+            },
+            "required": ["input"]
+        },
+        "reference": {
+            "title": "Reference genome",
+            "type": "object",
+            "properties": {
+                "fasta": {
+                    "type": "string",
+                    "description": "Reference genome FASTA."
+                },
+                "fai": {
+                    "type": "string",
+                    "description": "Reference genome FASTA index (.fai)."
+                },
+                "dict": {
+                    "type": "string",
+                    "description": "Reference sequence dictionary (.dict) — required by ASEReadCounter."
+                },
+                "dbsnp": {
+                    "type": "string",
+                    "description": "dbSNP VCF (bgzipped) for MuSE sump."
+                },
+                "dbsnp_tbi": {
+                    "type": "string",
+                    "description": "dbSNP VCF tabix index."
+                }
+            },
+            "required": ["fasta", "fai", "dbsnp", "dbsnp_tbi"]
+        },
+        "ichorcna": {
+            "title": "ichorCNA",
+            "type": "object",
+            "properties": {
+                "gc_wig": {
+                    "type": "string",
+                    "description": "GC content WIG file for ichorCNA."
+                },
+                "map_wig": {
+                    "type": "string",
+                    "description": "Mappability WIG file for ichorCNA."
+                },
+                "centromere": {
+                    "type": "string",
+                    "description": "Centromere locations file (optional)."
+                },
+                "panel_of_normals": {
+                    "type": "string",
+                    "description": "Panel of normals RDS for ichorCNA (optional)."
+                },
+                "rep_time_wig": {
+                    "type": "string",
+                    "description": "Replication timing WIG file (optional)."
+                },
+                "exons": {
+                    "type": "string",
+                    "description": "Exon BED file for ichorCNA annotation (optional)."
+                }
+            }
+        },
+        "purple": {
+            "title": "Purple (AMBER/COBALT/PURPLE)",
+            "type": "object",
+            "properties": {
+                "het_pon": {
+                    "type": "string",
+                    "description": "HMF GermlineHetPon VCF for AMBER B-allele frequencies."
+                },
+                "het_pon_tbi": {
+                    "type": "string",
+                    "description": "Tabix index for het PON VCF."
+                },
+                "gc_profile": {
+                    "type": "string",
+                    "description": "HMF GC profile CNP file for COBALT and PURPLE."
+                },
+                "ref_genome_version": {
+                    "type": "string",
+                    "description": "HMF reference genome version string.",
+                    "default": "V38"
+                }
+            }
+        },
+        "tnscope": {
+            "title": "Sentieon TNScope",
+            "type": "object",
+            "properties": {
+                "germline_vcf": {
+                    "type": "string",
+                    "description": "Germline population VCF (e.g. af-only-gnomad.hg38.vcf.gz)."
+                },
+                "germline_vcf_tbi": {
+                    "type": "string",
+                    "description": "Tabix index for germline VCF."
+                },
+                "contamination_vcf": {
+                    "type": "string",
+                    "description": "Common variant VCF for contamination model."
+                },
+                "contamination_vcf_tbi": {
+                    "type": "string",
+                    "description": "Tabix index for contamination VCF."
+                }
+            }
+        },
+        "vep": {
+            "title": "Ensembl VEP",
+            "type": "object",
+            "properties": {
+                "vep_cache": {
+                    "type": "string",
+                    "description": "Path to VEP offline cache directory (~/.vep)."
+                },
+                "vep_genome": {
+                    "type": "string",
+                    "description": "Assembly name for VEP --assembly.",
+                    "default": "GRCh38"
+                },
+                "vep_cache_version": {
+                    "type": "integer",
+                    "description": "VEP cache version.",
+                    "default": 114
+                }
+            }
+        },
+        "pipeline": {
+            "title": "Pipeline options",
+            "type": "object",
+            "properties": {
+                "wgs": {
+                    "type": "boolean",
+                    "description": "WGS mode (true) or WXS/exome mode (false).",
+                    "default": true
+                }
+            }
+        }
+    },
+    "allOf": [
+        {"$ref": "#/$defs/input_output"},
+        {"$ref": "#/$defs/reference"},
+        {"$ref": "#/$defs/ichorcna"},
+        {"$ref": "#/$defs/purple"},
+        {"$ref": "#/$defs/tnscope"},
+        {"$ref": "#/$defs/vep"},
+        {"$ref": "#/$defs/pipeline"}
+    ]
+}
