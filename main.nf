@@ -117,18 +117,26 @@ workflow {
     */
     SAMTOOLS_CONVERT_NORMAL(ch_normal_cram, ch_ref)
 
-    // Collect tumor BAM + BAI (full meta — tumor_sample/normal_sample preserved for TNScope)
+    // Collect tumor BAM + BAI (full meta — tumor_sample/normal_sample needed by AMBER/COBALT)
     ch_tumor_bam = SAMTOOLS_CONVERT_TUMOR.out.bam
         .join(SAMTOOLS_CONVERT_TUMOR.out.bai)
 
-    // id-only meta version for joining with ch_normal_bam (which carries only [id:])
-    ch_tumor_bam_id = ch_tumor_bam
-        .map { meta, bam, bai -> tuple([id: meta.id], bam, bai) }
-
-    // Collect normal BAM + BAI; remap meta back to patient id for downstream joins
+    // Collect normal BAM + BAI keyed by patient id (meta.id) for joining with tumor
     ch_normal_bam = SAMTOOLS_CONVERT_NORMAL.out.bam
         .join(SAMTOOLS_CONVERT_NORMAL.out.bai)
-        .map { meta, bam, bai -> tuple([id: meta.patient], bam, bai) }
+        .map { meta, bam, bai -> tuple(meta.patient, bam, bai) }
+
+    // Joined tumor+normal BAM channel: prepend string id as join key, then restore full tumor meta
+    ch_tumor_normal_bam = ch_tumor_bam
+        .map { meta, bam, bai -> tuple(meta.id, meta, bam, bai) }
+        .join(ch_normal_bam)
+        .map { _id, meta, tumor_bam, tumor_bai, normal_bam, normal_bai ->
+            tuple(meta, tumor_bam, tumor_bai, normal_bam, normal_bai)
+        }
+
+    // id-only meta version for processes that don't need sample name fields
+    ch_tumor_bam_id = ch_tumor_bam
+        .map { meta, bam, bai -> tuple([id: meta.id], bam, bai) }
 
     // -------------------------------------------------------------------------
     // Step 2: MuSE somatic variant calling
@@ -138,8 +146,7 @@ workflow {
     Combine tumor and normal BAMs with the reference FASTA for MuSE call.
     muse/call input: tuple(meta, tumor_bam, tumor_bai, normal_bam, normal_bai, reference)
     */
-    ch_muse_input = ch_tumor_bam_id
-        .join(ch_normal_bam)
+    ch_muse_input = ch_tumor_normal_bam
         .combine(ch_fasta)
         .map { meta, tumor_bam, tumor_bai, normal_bam, normal_bai, fasta ->
             tuple(meta, tumor_bam, tumor_bai, normal_bam, normal_bai, fasta)
@@ -278,8 +285,7 @@ workflow {
     hmftools/amber input: tuple(meta, tumor_bam, tumor_bai, normal_bam, normal_bai),
         fasta, fai, het_pon, het_pon_tbi, ref_genome_version
     */
-    ch_purple_bam_input = ch_tumor_bam_id
-        .join(ch_normal_bam)
+    ch_purple_bam_input = ch_tumor_normal_bam
 
     HMFTOOLS_AMBER(
         ch_purple_bam_input,
@@ -351,8 +357,8 @@ workflow {
     )
 
     ch_ase_normal_input = ch_normal_bam
-        .join(ch_ase_vcf)
-        .map { meta, bam, bai, vcf, tbi -> tuple(meta, bam, bai, tuple(meta, vcf, tbi)) }
+        .join(ch_ase_vcf.map { meta, vcf, tbi -> tuple(meta.id, vcf, tbi) })
+        .map { id, bam, bai, vcf, tbi -> tuple([id: id], bam, bai, tuple([id: id], vcf, tbi)) }
 
     GATK4_ASEREADCOUNTER_NORMAL(
         ch_ase_normal_input.map { meta, bam, bai, _vcf_tuple -> tuple(meta, bam, bai) },
