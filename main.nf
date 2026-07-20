@@ -121,20 +121,25 @@ workflow {
     ch_tumor_bam = SAMTOOLS_CONVERT_TUMOR.out.bam
         .join(SAMTOOLS_CONVERT_TUMOR.out.bai)
 
-    // Collect normal BAM + BAI keyed by patient id (meta.id) for joining with tumor
+    // Collect normal BAM + BAI; remap meta back to patient id for downstream joins
     ch_normal_bam = SAMTOOLS_CONVERT_NORMAL.out.bam
         .join(SAMTOOLS_CONVERT_NORMAL.out.bai)
-        .map { meta, bam, bai -> tuple(meta.patient, bam, bai) }
+        .map { meta, bam, bai -> tuple([id: meta.patient], bam, bai) }
 
-    // Joined tumor+normal BAM channel: prepend string id as join key, then restore full tumor meta
+    // Joined tumor+normal BAM channel with full tumor meta preserved.
+    // Join on bare string id so the different-shaped meta maps don't block the match.
     ch_tumor_normal_bam = ch_tumor_bam
         .map { meta, bam, bai -> tuple(meta.id, meta, bam, bai) }
-        .join(ch_normal_bam)
-        .map { _id, meta, tumor_bam, tumor_bai, normal_bam, normal_bai ->
-            tuple(meta, tumor_bam, tumor_bai, normal_bam, normal_bai)
+        .join(
+            SAMTOOLS_CONVERT_NORMAL.out.bam
+                .join(SAMTOOLS_CONVERT_NORMAL.out.bai)
+                .map { meta, bam, bai -> tuple(meta.patient, bam, bai) }
+        )
+        .map { _id, full_meta, tumor_bam, tumor_bai, normal_bam, normal_bai ->
+            tuple(full_meta, tumor_bam, tumor_bai, normal_bam, normal_bai)
         }
 
-    // id-only meta version for processes that don't need sample name fields
+    // id-only meta version for ASE tumor (joins with id-only VCF channel)
     ch_tumor_bam_id = ch_tumor_bam
         .map { meta, bam, bai -> tuple([id: meta.id], bam, bai) }
 
