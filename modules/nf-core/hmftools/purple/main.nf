@@ -13,6 +13,7 @@ process HMFTOOLS_PURPLE {
     path fai
     path gc_profile
     val  ref_genome_version
+    path ensembl_data_dir
 
     output:
     tuple val(meta), path("${tumor_sm}.purple.purity.tsv"),          emit: purity
@@ -43,6 +44,7 @@ process HMFTOOLS_PURPLE {
         -gc_profile          ${gc_profile} \\
         -ref_genome          ${fasta} \\
         -ref_genome_version  ${ref_genome_version} \\
+        -ensembl_data_dir    ${ensembl_data_dir} \\
         ${somatic_arg} \\
         -output_dir          . \\
         -threads             ${task.cpus} \\

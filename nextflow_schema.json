@@ -100,6 +100,10 @@
                     "type": "string",
                     "description": "HMF reference genome version string.",
                     "default": "V38"
+                },
+                "ensembl_data_dir": {
+                    "type": "string",
+                    "description": "HMF Ensembl data cache directory (required by PURPLE 4.x)."
                 }
             }
         },

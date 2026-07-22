@@ -47,6 +47,7 @@ workflow {
     ch_het_pon            = params.het_pon            ? channel.fromPath(params.het_pon, checkIfExists: true).first()            : channel.value([])
     ch_het_pon_tbi        = params.het_pon_tbi        ? channel.fromPath(params.het_pon_tbi, checkIfExists: true).first()        : channel.value([])
     ch_gc_profile         = params.gc_profile         ? channel.fromPath(params.gc_profile, checkIfExists: true).first()         : channel.value([])
+    ch_ensembl_data_dir   = params.ensembl_data_dir   ? channel.fromPath(params.ensembl_data_dir, checkIfExists: true).first()   : channel.value([])
     ch_germline_vcf       = params.germline_vcf       ? channel.fromPath(params.germline_vcf, checkIfExists: true).first()       : channel.value([])
     ch_germline_vcf_tbi   = params.germline_vcf_tbi   ? channel.fromPath(params.germline_vcf_tbi, checkIfExists: true).first()   : channel.value([])
     ch_contamination_vcf  = params.contamination_vcf  ? channel.fromPath(params.contamination_vcf, checkIfExists: true).first()  : channel.value([])
@@ -341,7 +342,8 @@ workflow {
         ch_fasta,
         ch_fai,
         ch_gc_profile,
-        params.ref_genome_version
+        params.ref_genome_version,
+        ch_ensembl_data_dir
     )
 
     // -------------------------------------------------------------------------
