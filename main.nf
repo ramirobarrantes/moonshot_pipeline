@@ -203,11 +203,18 @@ workflow {
         )
         .map { _id, meta, tumor_wig, normal_wig -> tuple(meta, tumor_wig, normal_wig) }
 
+    ch_ichorcna_input
+        .multiMap { meta, tumor_wig, normal_wig ->
+            tumor:  tuple(meta, tumor_wig)
+            normal: normal_wig
+        }
+        .set { ch_ichorcna_split }
+
     ICHORCNA_RUN(
-        ch_ichorcna_input.map { meta, tumor_wig, _normal_wig -> tuple(meta, tumor_wig) },
+        ch_ichorcna_split.tumor,
         ch_gc_wig,
         ch_map_wig,
-        ch_ichorcna_input.map { _meta, _tumor_wig, normal_wig -> normal_wig },
+        ch_ichorcna_split.normal,
         ch_pon,
         ch_centromere,
         ch_rep_time,
