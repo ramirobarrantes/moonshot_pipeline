@@ -330,9 +330,11 @@ workflow {
         fasta, fai, gc_profile, ref_genome_version
     */
     ch_purple_input = HMFTOOLS_AMBER.out.amber_dir
-        .join(HMFTOOLS_COBALT.out.cobalt_dir)
-        .join(SENTIEON_TNFILTER.out.vcf.map  { meta, vcf     -> tuple([id: meta.id], vcf) })
-        .join(SENTIEON_TNFILTER.out.tbi.map  { meta, tbi     -> tuple([id: meta.id], tbi) })
+        .map { meta, dir -> tuple(meta.id, meta, dir) }
+        .join(HMFTOOLS_COBALT.out.cobalt_dir.map { meta, dir -> tuple(meta.id, dir) })
+        .join(SENTIEON_TNFILTER.out.vcf.map      { meta, vcf -> tuple(meta.id, vcf) })
+        .join(SENTIEON_TNFILTER.out.tbi.map      { meta, tbi -> tuple(meta.id, tbi) })
+        .map { _id, meta, amber_dir, cobalt_dir, vcf, tbi -> tuple(meta, amber_dir, cobalt_dir, vcf, tbi) }
 
     HMFTOOLS_PURPLE(
         ch_purple_input,
@@ -371,6 +373,7 @@ workflow {
     )
 
     ch_ase_normal_input = ch_normal_bam
+        .map { meta, bam, bai -> tuple(meta.id, bam, bai) }
         .join(ch_ase_vcf.map { meta, vcf, tbi -> tuple(meta.id, vcf, tbi) })
         .map { id, bam, bai, vcf, tbi -> tuple([id: id], bam, bai, tuple([id: id], vcf, tbi)) }
 
