@@ -187,20 +187,24 @@ workflow {
     /*
     Count reads in genomic windows for the matched normal BAM.
     */
-    READCOUNTER_NORMAL(ch_normal_bam, ch_ref_fasta)
+    // Use SAMTOOLS_CONVERT_NORMAL output directly (meta has _N suffix) so the
+    // normal WIG gets a distinct filename from the tumor WIG.
+    READCOUNTER_NORMAL(
+        SAMTOOLS_CONVERT_NORMAL.out.bam.join(SAMTOOLS_CONVERT_NORMAL.out.bai),
+        ch_ref_fasta
+    )
 
     /*
     Run ichorCNA using the tumor wig, normal wig, GC content, and mappability data
     to estimate copy number alterations and tumor fraction.
     ichorcna/run input: tuple(meta, wig), gc_wig, map_wig, normal_wig, normal_background, centromere, rep_time_wig, exons
     */
-    // Join normal wig to tumor wig by patient id so each tumor sample gets its
-    // paired normal wig rather than relying on channel ordering.
+    // Join on meta.id (tumor) vs meta.patient (normal _N meta) to pair correctly.
     ch_ichorcna_input = READCOUNTER_TUMOR.out.wig
         .map { meta, wig -> tuple(meta.id, meta, wig) }
         .join(
             READCOUNTER_NORMAL.out.wig
-                .map { meta, wig -> tuple(meta.id, wig) }
+                .map { meta, wig -> tuple(meta.patient, wig) }
         )
         .map { _id, meta, tumor_wig, normal_wig -> tuple(meta, tumor_wig, normal_wig) }
 
