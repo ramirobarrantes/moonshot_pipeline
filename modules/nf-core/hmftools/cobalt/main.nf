@@ -28,7 +28,7 @@ process HMFTOOLS_COBALT {
     """
     mkdir -p cobalt_out
 
-    export JAVA_TOOL_OPTIONS="-Xmx220g"
+    export _JAVA_OPTIONS="-Xmx220g"
     cobalt \\
         -tumor            ${tumor_sm} \\
         -tumor_bam        ${tumor_bam} \\
