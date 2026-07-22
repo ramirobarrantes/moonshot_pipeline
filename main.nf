@@ -200,7 +200,7 @@ workflow {
         .map { meta, wig -> tuple(meta.id, meta, wig) }
         .join(
             READCOUNTER_NORMAL.out.wig
-                .map { meta, wig -> tuple(meta.patient, wig) }
+                .map { meta, wig -> tuple(meta.id, wig) }
         )
         .map { _id, meta, tumor_wig, normal_wig -> tuple(meta, tumor_wig, normal_wig) }
 
