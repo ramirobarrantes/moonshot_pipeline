@@ -195,12 +195,13 @@ workflow {
     */
     // Join normal wig to tumor wig by patient id so each tumor sample gets its
     // paired normal wig rather than relying on channel ordering.
-    ch_normal_wig_keyed = READCOUNTER_NORMAL.out.wig
-        .map { meta, wig -> tuple([id: meta.patient], wig) }
-
     ch_ichorcna_input = READCOUNTER_TUMOR.out.wig
-        .join(ch_normal_wig_keyed)
-        .map { meta, tumor_wig, normal_wig -> tuple(meta, tumor_wig, normal_wig) }
+        .map { meta, wig -> tuple(meta.id, meta, wig) }
+        .join(
+            READCOUNTER_NORMAL.out.wig
+                .map { meta, wig -> tuple(meta.patient, wig) }
+        )
+        .map { _id, meta, tumor_wig, normal_wig -> tuple(meta, tumor_wig, normal_wig) }
 
     ICHORCNA_RUN(
         ch_ichorcna_input.map { meta, tumor_wig, _normal_wig -> tuple(meta, tumor_wig) },
